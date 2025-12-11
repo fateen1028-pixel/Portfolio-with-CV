@@ -82,7 +82,7 @@ const Contact = () => {
           <div className="mt-12 pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4 text-gray-400">
             <div className="flex items-center gap-2 hover:text-white transition-colors cursor-pointer">
               <Mail size={18} />
-              <span>hello@portfolio.dev</span>
+              <span>fateen.build@gmail.com</span>
             </div>
             <div className="flex items-center gap-6">
               <a href="#" className="hover:text-white transition-colors transform hover:scale-110"><Linkedin size={24} /></a>
