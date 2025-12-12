@@ -4,13 +4,24 @@ import { ArrowRight, Github, Linkedin, Download } from 'lucide-react';
 
 const Hero = () => {
     const ref = useRef(null);
+    
+    // 1. Optimized Scroll Tracking
     const { scrollYProgress } = useScroll({
         target: ref,
         offset: ["start start", "end start"]
     });
 
-    const backgroundY = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
-    const textY = useTransform(scrollYProgress, [0, 1], ["0%", "150%"]);
+    // 2. Smooth Physics for Parallax (Fixes Jitter)
+    // Instead of raw scroll data, we use a spring to "catch up" smoothly
+    const smoothScroll = useSpring(scrollYProgress, {
+        stiffness: 100,
+        damping: 30,
+        restDelta: 0.001
+    });
+
+    // Use smoothScroll instead of scrollYProgress
+    const backgroundY = useTransform(smoothScroll, [0, 1], ["0%", "50%"]);
+    const textY = useTransform(smoothScroll, [0, 1], ["0%", "150%"]);
 
     // Mouse tracking for spotlight
     const mouseX = useMotionValue(0);
@@ -25,8 +36,6 @@ const Hero = () => {
         const handleMouseMove = (e) => {
             const { clientX, clientY } = e;
             const { innerWidth, innerHeight } = window;
-            // Calculate position relative to center (for parallax effect)
-            // Opposite direction to cursor to create depth
             const x = -(clientX - innerWidth / 2) / 20;
             const y = -(clientY - innerHeight / 2) / 20;
             mouseX.set(x);
@@ -39,16 +48,29 @@ const Hero = () => {
 
     // Config for letter animation
     const name = "Mohamed Fateen F";
+    const words = name.split(" ");
+
     const sentence = {
         hidden: { opacity: 1 },
         visible: {
             opacity: 1,
             transition: {
                 delay: 0.5,
-                staggerChildren: 0.08,
+                staggerChildren: 0.15,
             },
         },
     };
+    
+    const wordWrapper = {
+        hidden: { opacity: 1 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.08,
+            }
+        }
+    };
+
     const letter = {
         hidden: { opacity: 0, y: 50 },
         visible: {
@@ -64,23 +86,26 @@ const Hero = () => {
             className="min-h-screen flex items-center justify-center relative bg-primary-bg overflow-hidden pt-16"
         >
             {/* Dynamic Aurora Background Layer */}
+            {/* Added 'will-change-transform' to hint browser for GPU optimization */}
             <motion.div
-                style={{ y: backgroundY }}
+                style={{ y: backgroundY, willChange: "transform" }}
                 className="absolute inset-0 w-full h-full z-0 overflow-hidden"
             >
                 <div className="absolute inset-0 bg-primary-bg"></div>
 
-                {/* Animated Gradient Orbs - Warm Theme (Orange/Red/Amber) */}
+                {/* Animated Gradient Orbs */}
                 <motion.div
                     animate={{ x: [0, 100, 0], y: [0, -50, 0], scale: [1, 1.2, 1] }}
                     transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                     className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-orange-600/20 rounded-full blur-[120px] mix-blend-screen opacity-50"
+                    style={{ willChange: "transform" }}
                 ></motion.div>
 
                 <motion.div
                     animate={{ x: [0, -100, 0], y: [0, 100, 0], scale: [1, 1.5, 1] }}
                     transition={{ duration: 25, repeat: Infinity, ease: "linear", delay: 2 }}
                     className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-red-600/20 rounded-full blur-[100px] mix-blend-screen opacity-40"
+                    style={{ willChange: "transform" }}
                 ></motion.div>
 
                 <motion.div
@@ -88,30 +113,31 @@ const Hero = () => {
                     style={{ originX: 0.5, originY: 0.5 }}
                     transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
                     className="absolute top-[20%] left-[30%] w-[600px] h-[600px] bg-amber-500/10 rounded-full blur-[120px] mix-blend-screen opacity-30"
+                    style={{ willChange: "transform" }}
                 ></motion.div>
 
                 {/* Overlay to ensure text readability */}
                 <div className="absolute inset-0 bg-gradient-to-b from-primary-bg/80 via-transparent to-primary-bg"></div>
             </motion.div>
 
-            {/* Cinematic Spotlight/Glow Effect - Mouse Interactive */}
+            {/* Cinematic Spotlight/Glow Effect */}
             <motion.div
                 style={{
                     x: springX,
                     y: springY,
-                    opacity: 0.4
+                    opacity: 0.4,
+                    willChange: "transform" 
                 }}
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ scale: { duration: 5, repeat: Infinity, ease: "easeInOut" } }}
                 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary-accent/20 rounded-full blur-[100px] pointer-events-none z-0"
             ></motion.div>
 
-            <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10 text-center flex flex-col items-center pt-10"> {/* Reduced padding and responsible px */}
-                {/* Visual Anchor - subtle geometric blur behind title */}
+            <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10 text-center flex flex-col items-center pt-10">
                 <div className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-gradient-to-tr from-primary-accent/10 to-transparent rounded-full blur-[80px] pointer-events-none"></div>
 
                 <motion.div
-                    style={{ y: textY }}
+                    style={{ y: textY, willChange: "transform" }}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 1 }}
@@ -133,18 +159,28 @@ const Hero = () => {
                     </div>
 
                     <motion.h1
-                        className="text-5xl md:text-8xl lg:text-9xl font-bold text-white mb-4 leading-[1.1] tracking-tight drop-shadow-2xl text-center z-10"
+                        className="text-4xl sm:text-5xl md:text-7xl lg:text-9xl font-bold text-white mb-4 leading-[1.1] tracking-tight drop-shadow-2xl text-center z-10 flex flex-wrap justify-center gap-x-3 gap-y-1 md:gap-x-5"
                         variants={sentence}
                         initial="hidden"
                         animate="visible"
                     >
-                        {name.split("").map((char, index) => {
-                            return (
-                                <motion.span key={char + "-" + index} variants={letter} className="inline-block relative">
-                                    {char === " " ? "\u00A0" : char}
-                                </motion.span>
-                            )
-                        })}
+                        {words.map((word, wordIndex) => (
+                            <motion.span 
+                                key={word + "-" + wordIndex} 
+                                className="inline-block whitespace-nowrap"
+                                variants={wordWrapper}
+                            >
+                                {word.split("").map((char, charIndex) => (
+                                    <motion.span 
+                                        key={char + "-" + charIndex} 
+                                        variants={letter} 
+                                        className="inline-block"
+                                    >
+                                        {char}
+                                    </motion.span>
+                                ))}
+                            </motion.span>
+                        ))}
                     </motion.h1>
 
                     <motion.h2
@@ -155,7 +191,6 @@ const Hero = () => {
                     >
                         Building Web + <span className="text-primary-accent relative inline-block">
                             AI Applications
-                            {/* Animated Underline */}
                             <svg className="absolute w-full h-3 -bottom-1 left-0 text-primary-accent opacity-80" viewBox="0 0 100 10" preserveAspectRatio="none">
                                 <motion.path
                                     d="M0 5 Q 50 10 100 5"
@@ -204,4 +239,3 @@ const Hero = () => {
 };
 
 export default Hero;
-
